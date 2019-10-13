@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crud.cloud.evanliu2968.dao.AdminMainMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.crud.cloud.evanliu2968.po.admin.AdminMainPO">
+        <id column="id" property="id"/>
+        <result column="admin_name" property="adminName"/>
+        <result column="admin_mobile" property="adminMobile"/>
+        <result column="admin_status" property="adminStatus"/>
+        <result column="admin_pwd" property="adminPwd"/>
+        <result column="admin_account" property="adminAccount"/>
+        <result column="admin_idcard" property="adminIdcard"/>
+        <result column="lock_status" property="lockStatus"/>
+        <result column="failure_num" property="failureNum"/>
+        <result column="admin_group" property="adminGroup"/>
+        <result column="admin_post" property="adminPost"/>
+        <result column="personal_signature" property="personalSignature"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_id" property="updateId"/>
+        <result column="create_id" property="createId"/>
+        <result column="note" property="note"/>
+        <result column="version" property="version"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+    <select id="resetAdminMainLocked"   resultType="java.lang.Integer">
+        update admin_main set lock_status=0,failure_num=0 where lock_status =  1 OR failure_num > 0
+    </select>
+
+    <select id="selectMainAndRoleList" resultType="com.crud.cloud.evanliu2968.dto.response.admin.AdminMainRes">
+        select * from (
+        SELECT
+        distinct am.id AS id,
+        am.admin_name as admin_name,
+        am.admin_status AS admin_status,
+        am.lock_status AS lock_status,
+        am.create_time AS create_time,
+        am.admin_account AS admin_account,
+        am.admin_idcard AS admin_idcard,
+        am.admin_mobile AS adminMobile,
+        am.type AS type,
+        am.person_id as personId,
+        person.`name` as person_name,
+        IF(auth.id,true,false) as selected,
+        (
+        SELECT
+        am1.admin_account AS created_admin_account
+        FROM
+        admin_main am1
+        WHERE
+        am1.id = am.create_id
+        ) AS created_admin_account,
+        (
+        SELECT
+        GROUP_CONCAT(DISTINCT(ar.role_name)) AS role_names
+        FROM
+        admin_role ar
+        LEFT JOIN admin_role_ref arr ON ar.id = arr.role_id
+        WHERE
+        arr.admin_id = am.id
+        and arr.status = 0
+        and ar.role_status = 0
+        ) AS role_names
+        FROM
+        admin_main am
+        LEFT JOIN admin_role_ref arr ON am.id = arr.admin_id
+        LEFT JOIN admin_role ar ON ar.id = arr.role_id
+        LEFT JOIN admin_group_ref agr ON am.id = agr.admin_id
+        LEFT JOIN admin_group ag ON ag.id = agr.group_id
+        LEFT JOIN person on am.person_id = person.id
+        LEFT JOIN data_authority_admin_ref auth on am.id = auth.admin_id
+        <if test="request!=null and request.type!=null and request.dataId!=null">
+            and auth.type = #{request.type}
+            and auth.data_id = #{request.dataId}
+            and auth.del_flag = 0
+        </if>
+        where 1=1 and am.del_flag = 0
+        <if test="userId!=null and request.type!=null and request.dataId!=null">
+            and am.id != #{userId}
+        </if>
+        <if test="request.roleId!=null">
+            and ar.role_status = 0
+            and arr.status = 0
+            AND ar.id = #{request.roleId}
+        </if>
+        <if test="request.groupId!=null">
+            and ag.group_status = 0
+            and agr.status = 0
+            AND ag.id = #{request.groupId}
+        </if>
+        ) su
+        where 1=1
+        <if test="request.keyWord!=null and request.keyWord != ''">
+            and (su.admin_name like concat('%',#{request.keyWord},'%')
+            OR su.admin_account like concat('%',#{request.keyWord},'%'))
+        </if>
+        <if test="request.adminStatus!=null">
+            AND su.admin_status = #{request.adminStatus}
+        </if>
+        <if test="request.lockStatus!=null">
+            AND su.lock_status = #{request.lockStatus}
+        </if>
+        order by su.admin_status asc,su.create_time desc
+        <if test="limit != null and offset != null">
+            limit #{limit} offset #{offset}
+        </if>
+    </select>
+    <select id="selectMainAndRoleListCount" resultType="java.lang.Integer">
+        select count(*) from (
+        SELECT
+        distinct am.id AS id,
+        am.admin_name AS admin_name,
+        am.admin_status AS admin_status,
+        am.lock_status AS lock_status,
+        am.create_time AS create_time,
+        am.admin_account AS admin_account,
+        am.admin_idcard AS admin_idcard,
+        am.admin_mobile AS adminMobile,
+        (
+        SELECT
+        am1.admin_account AS created_admin_account
+        FROM
+        admin_main am1
+        WHERE
+        am1.id = am.create_id
+        ) AS created_admin_account,
+        (
+        SELECT
+        GROUP_CONCAT(DISTINCT(ar.role_name)) AS role_names
+        FROM
+        admin_role ar
+        LEFT JOIN admin_role_ref arr ON ar.id = arr.role_id
+        WHERE
+        arr.admin_id = am.id
+        and arr.status = 0
+        and ar.role_status = 0
+        ) AS role_names
+        FROM
+        admin_main am
+        LEFT JOIN admin_role_ref arr ON am.id = arr.admin_id
+        LEFT JOIN admin_role ar ON ar.id = arr.role_id
+        <if test="request.roleId!=null">
+            where ar.role_status = 0
+            and arr.status = 0
+            AND ar.id = #{request.roleId}
+        </if>
+        ) su
+        where 1=1
+        <if test="request.keyWord!=null and request.keyWord != ''">
+            and (su.admin_name like concat('%',#{request.keyWord},'%')
+            OR su.admin_account like concat('%',#{request.keyWord},'%'))
+        </if>
+        <if test="request.adminStatus!=null">
+            AND su.admin_status = #{request.adminStatus}
+        </if>
+        <if test="request.lockStatus!=null">
+            AND su.lock_status = #{request.lockStatus}
+        </if>
+    </select>
+    <select id="getAdminMainListByRoleId" resultType="com.crud.cloud.evanliu2968.dto.response.admin.AdminMainRes"
+            parameterType="java.lang.Integer">
+        select
+        am.id as id,
+        am.admin_name as admin_name,
+        am.admin_status as admin_status,
+        am.admin_account as admin_account
+        from
+            admin_main am
+        left join admin_role_ref arr on am.id = arr.admin_id
+        left join admin_role ar on ar.id = arr.role_id
+        where
+            1 = 1
+            and ar.id != #{roleId}
+    </select>
+
+    <update id="updateAdminMainInfo" parameterType="com.crud.cloud.evanliu2968.po.admin.AdminMainPO">
+        update admin_main
+        set admin_group = #{adminGroup},
+        admin_name = #{adminName},
+        admin_post = #{adminPost},
+        personal_signature = #{personalSignature},
+        image_url = #{imageUrl},
+        update_id = #{updateId}
+        where id = #{id}
+    </update>
+</mapper>

@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.crud.cloud.evanliu2968.dao.FileMapper">
+
+	<resultMap id="BaseResultMap" type="com.crud.cloud.evanliu2968.po.FilePO">
+		<result column="id" property="id"/>
+		<result column="file_name" property="fileName"/>
+		<result column="file_url" property="fileUrl"/>
+		<result column="file_type" property="fileType"/>
+		<result column="file_size" property="fileSize"/>
+		<result column="file_down_count" property="fileDownCount"/>
+		<result column="update_time" property="updateTime"/>
+		<result column="create_time" property="createTime"/>
+		<result column="update_id" property="updateId"/>
+		<result column="create_id" property="createId"/>
+		<result column="note" property="note"/>
+		<result column="version" property="version"/>
+		<result column="del_flag" property="delFlag"/>
+	</resultMap>
+
+	<select id="getFileGroupListByFileType" resultType="com.crud.cloud.evanliu2968.dto.response.FileGroupRes">
+
+		SELECT
+			fl.file_name AS groupCode
+			/*IFNULL(COUNT(*),0) AS count*/
+		from file fl
+			LEFT JOIN appoint_remove_file_ref fr ON fl.id = fr.file_id
+			LEFT JOIN flow_path fp ON fr.flow_path_id = fp.id
+			<if test="taskType != null and taskType != ''">
+				<if test="taskType == 'RM'">
+					LEFT JOIN appoint_remove_base_info arbi ON fp.id=arbi.flow_path_id AND arbi.del_flag = 0
+				</if>
+				<if test="taskType == 'XR'">
+					LEFT JOIN incumbent_info ii ON fp.id=ii.flow_path_id AND ii.del_flag = 0
+				</if>
+			</if>
+		WHERE
+			fr.del_flag = 0
+			AND fp.del_flag = 0
+			AND fl.del_flag = 0
+			<if test="idList != null and idList.size() > 0">
+				OR fl.id in
+				<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+			AND fl.create_id = #{createId}
+		/*GROUP BY file_type*/
+
+	</select>
+
+	<select id="getFileListByFileTypeCount" resultType="java.lang.Integer">
+		SELECT
+			count(*)
+		from
+			file fl
+		LEFT JOIN appoint_remove_file_ref fr ON fl.id = fr.file_id
+		<if test="taskType != null and taskType != ''">
+			<if test="taskType == 'RM'">
+				LEFT JOIN appoint_remove_base_info arbi ON fr.flow_path_id=arbi.flow_path_id AND arbi.del_flag = 0
+			</if>
+			<if test="taskType == 'XR'">
+				LEFT JOIN incumbent_info ii ON fr.flow_path_id=ii.flow_path_id AND ii.del_flag = 0
+			</if>
+		</if>
+		where
+			fr.del_flag = 0
+		AND fl.del_flag = 0
+		<if test="idList != null and idList.size() > 0">
+			OR fl.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		<if test="fileType != null and fileType != ''">
+			<if test="fileType == 'PDF'">
+				AND fl.file_name LIKE CONCAT( '%', '.pdf')
+			</if>
+
+			<if test="fileType == 'DOC'">
+				AND fl.file_name LIKE CONCAT( '%', '.doc') or fl.file_name LIKE CONCAT( '%', '.docx')
+			</if>
+
+			<if test="fileType == 'XLS'">
+				AND fl.file_name LIKE CONCAT( '%', '.xls') or fl.file_name LIKE CONCAT( '%', '.xlsx')
+			</if>
+
+			<if test="fileType == 'PPT'">
+				AND fl.file_name LIKE CONCAT( '%', '.ppt') or fl.file_name LIKE CONCAT( '%', '.pptx')
+			</if>
+
+			<if test="fileType == 'TXT'">
+				AND fl.file_name LIKE CONCAT( '%', '.txt')
+			</if>
+
+			<if test="fileType == 'ysb'">
+				AND fl.file_name LIKE CONCAT( '%', '.rar') or fl.file_name LIKE CONCAT( '%', '.zip') or fl.file_name LIKE CONCAT( '%', '.7z')
+			</if>
+
+			<if test="fileType == 'dmt'">
+				AND fl.file_name LIKE CONCAT( '%', '.wav') or fl.file_name LIKE CONCAT( '%', '.mp3') or fl.file_name LIKE CONCAT( '%', '.mp4')
+				or fl.file_name LIKE CONCAT( '%', '.3gp') or fl.file_name LIKE CONCAT( '%', '.mkv') or fl.file_name LIKE CONCAT( '%', '.rmvb')
+				or fl.file_name LIKE CONCAT( '%', '.flv') or fl.file_name LIKE CONCAT( '%', '.avi') or fl.file_name LIKE CONCAT( '%', '.mpg')
+				or fl.file_name LIKE CONCAT( '%', '.mov') or fl.file_name LIKE CONCAT( '%', '.wmv') or fl.file_name LIKE CONCAT( '%', '.rm')
+				or fl.file_name LIKE CONCAT( '%', '.amr') or fl.file_name LIKE CONCAT( '%', '.m4a') or fl.file_name LIKE CONCAT( '%', '.wma')
+			</if>
+
+			<if test="fileType == 'tp'">
+				AND fl.file_name LIKE CONCAT( '%', '.bmp') or fl.file_name LIKE CONCAT( '%', '.jpg') or fl.file_name LIKE CONCAT( '%', '.jpeg')
+				or fl.file_name LIKE CONCAT( '%', '.png') or fl.file_name LIKE CONCAT( '%', '.tif') or fl.file_name LIKE CONCAT( '%', '.gif')
+			</if>
+		</if>
+
+		AND fl.create_id = #{createId}
+	</select>
+
+	<select id="getFileListByFileType" resultType="com.crud.cloud.evanliu2968.dto.response.FileRes">
+		SELECT
+		fl.*, p.admin_name as createName
+		from
+			file fl
+		LEFT JOIN appoint_remove_file_ref fr ON fl.id = fr.file_id
+		<if test="taskType != null and taskType != ''">
+			<if test="taskType == 'RM'">
+				LEFT JOIN appoint_remove_base_info arbi ON fr.flow_path_id=arbi.flow_path_id AND arbi.del_flag = 0
+			</if>
+			<if test="taskType == 'XR'">
+				LEFT JOIN incumbent_info ii ON fr.flow_path_id=ii.flow_path_id AND ii.del_flag = 0
+			</if>
+		</if>
+		LEFT JOIN admin_main p ON p.id = fl.create_id
+		where
+			fr.del_flag = 0 and p.del_flag = 0
+			AND fl.del_flag = 0
+		<if test="fileType != null and fileType != ''">
+			<if test="fileType == 'PDF'">
+				AND fl.file_name LIKE CONCAT( '%', '.pdf')
+			</if>
+
+			<if test="fileType == 'DOC'">
+				AND fl.file_name LIKE CONCAT( '%', '.doc') or fl.file_name LIKE CONCAT( '%', '.docx')
+			</if>
+
+			<if test="fileType == 'XLS'">
+				AND fl.file_name LIKE CONCAT( '%', '.xls') or fl.file_name LIKE CONCAT( '%', '.xlsx')
+			</if>
+
+			<if test="fileType == 'PPT'">
+				AND fl.file_name LIKE CONCAT( '%', '.ppt') or fl.file_name LIKE CONCAT( '%', '.pptx')
+			</if>
+
+			<if test="fileType == 'TXT'">
+				AND fl.file_name LIKE CONCAT( '%', '.txt')
+			</if>
+
+			<if test="fileType == 'ysb'">
+				AND fl.file_name LIKE CONCAT( '%', '.rar') or fl.file_name LIKE CONCAT( '%', '.zip') or fl.file_name LIKE CONCAT( '%', '.7z')
+			</if>
+
+			<if test="fileType == 'dmt'">
+				AND fl.file_name LIKE CONCAT( '%', '.wav') or fl.file_name LIKE CONCAT( '%', '.mp3') or fl.file_name LIKE CONCAT( '%', '.mp4')
+				or fl.file_name LIKE CONCAT( '%', '.3gp') or fl.file_name LIKE CONCAT( '%', '.mkv') or fl.file_name LIKE CONCAT( '%', '.rmvb')
+				or fl.file_name LIKE CONCAT( '%', '.flv') or fl.file_name LIKE CONCAT( '%', '.avi') or fl.file_name LIKE CONCAT( '%', '.mpg')
+				or fl.file_name LIKE CONCAT( '%', '.mov') or fl.file_name LIKE CONCAT( '%', '.wmv') or fl.file_name LIKE CONCAT( '%', '.rm')
+				or fl.file_name LIKE CONCAT( '%', '.amr') or fl.file_name LIKE CONCAT( '%', '.m4a') or fl.file_name LIKE CONCAT( '%', '.wma')
+			</if>
+
+			<if test="fileType == 'tp'">
+				AND fl.file_name LIKE CONCAT( '%', '.bmp') or fl.file_name LIKE CONCAT( '%', '.jpg') or fl.file_name LIKE CONCAT( '%', '.jpeg')
+				or fl.file_name LIKE CONCAT( '%', '.png') or fl.file_name LIKE CONCAT( '%', '.tif') or fl.file_name LIKE CONCAT( '%', '.gif')
+			</if>
+		</if>
+			AND fl.create_id = #{createId}
+			<if test="idList != null and idList.size() > 0">
+				OR fl.id in
+				<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+			<if test="offset != null and limit != null">
+				limit #{offset} ,#{limit}
+			</if>
+	</select>
+
+	<select id="getFileGroupListByPerson" resultType="com.crud.cloud.evanliu2968.dto.response.FileGroupRes">
+		SELECT
+			ii.person_name AS groupCode,
+			IFNULL(COUNT(*), 0) AS count
+		FROM
+			file fi
+		LEFT JOIN appoint_remove_file_ref arfr ON fi.id = arfr.file_id
+		LEFT JOIN flow_path fp ON arfr.flow_path_id = fp.id
+	  	LEFT JOIN incumbent_info ii ON fp.id=ii.flow_path_id AND ii.del_flag = 0
+		WHERE
+			fp.del_flag = 0
+		AND arfr.del_flag = 0
+		AND fi.del_flag = 0
+		AND fi.create_id = #{createId}
+		<if test="idList != null and idList.size() > 0">
+			OR fi.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		GROUP BY
+			ii.person_name;
+	</select>
+
+	<select id="getFileListByPerson" resultType="com.crud.cloud.evanliu2968.dto.response.FileRes">
+		SELECT
+			fi.*, p.admin_name as createName
+		FROM
+			file fi
+		LEFT JOIN appoint_remove_file_ref arfr ON fi.id = arfr.file_id
+		LEFT JOIN flow_path fp ON arfr.flow_path_id = fp.id
+		LEFT JOIN incumbent_info ii ON ii.flow_path_id = fp.id
+		LEFT JOIN admin_main p ON p.id = fi.create_id
+		WHERE
+			fp.del_flag = 0
+		AND arfr.del_flag = 0
+		AND fi.del_flag = 0
+		AND fp.flow_path_type = #{taskType}
+		AND fi.create_id = #{createId}
+		AND ii.person_name = #{personName}
+		<if test="idList != null and idList.size() > 0">
+			OR fi.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		<if test="offset != null and limit != null">
+			limit #{offset} ,#{limit}
+		</if>
+	</select>
+
+	<select id="getFileListByPersonCount" resultType="java.lang.Integer">
+		SELECT
+			count( * )
+		FROM
+			file fi
+		LEFT JOIN appoint_remove_file_ref arfr ON fi.id = arfr.file_id
+		LEFT JOIN flow_path fp ON arfr.flow_path_id = fp.id
+		LEFT JOIN incumbent_info ii ON ii.flow_path_id = fp.id
+		WHERE
+			fp.del_flag = 0
+		AND arfr.del_flag = 0
+		AND fi.del_flag = 0
+		AND fp.flow_path_type = #{taskType}
+		AND fi.create_id = #{createId}
+		AND ii.person_name = #{personName}
+		<if test="idList != null and idList.size() > 0">
+			OR fi.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+
+	<select id="getFileGroupListByPostName" resultType="com.crud.cloud.evanliu2968.dto.response.FileGroupRes">
+		SELECT
+			arbi.appoint_post_name AS groupCode,
+			IFNULL(COUNT(*),0) AS count
+		FROM
+			file fi
+		LEFT JOIN appoint_remove_file_ref arfr ON fi.id = arfr.file_id
+		LEFT JOIN flow_path fp ON arfr.flow_path_id = fp.id
+		LEFT JOIN appoint_remove_base_info arbi ON arbi.flow_path_id = fp.id
+		WHERE
+		fp.del_flag = 0
+		AND arbi.del_flag = 0
+		AND arfr.del_flag = 0
+		AND fi.del_flag = 0
+		AND fi.create_id = #{createId}
+		<if test="idList != null and idList.size() > 0">
+			OR fi.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		GROUP BY
+		arbi.appoint_post_name
+	</select>
+
+	<select id="getFileListByPostNameCount" resultType="java.lang.Integer">
+		SELECT
+			count(*)
+		FROM
+			file fl
+		LEFT JOIN appoint_remove_file_ref fr ON fl.id = fr.file_id
+		LEFT JOIN flow_path fp ON fr.flow_path_id = fp.id
+		LEFT JOIN appoint_remove_base_info arbi ON arbi.flow_path_id = fp.id
+		WHERE
+			fr.del_flag = 0
+		AND fp.del_flag = 0
+		AND fl.del_flag = 0
+		AND arbi.appoint_post_name = #{postName}
+		AND fl.create_id = #{createId}
+		<if test="idList != null and idList.size() > 0">
+			OR fl.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+
+	<select id="getFileListByPostName" resultType="com.crud.cloud.evanliu2968.dto.response.FileRes">
+		SELECT
+		fl.*, p.admin_name as createName
+		FROM
+			file fl
+		LEFT JOIN appoint_remove_file_ref fr ON fl.id = fr.file_id
+		LEFT JOIN flow_path fp ON fr.flow_path_id = fp.id
+		LEFT JOIN appoint_remove_base_info arbi ON arbi.flow_path_id = fp.id
+		LEFT JOIN admin_main p ON p.id = fl.create_id
+		WHERE
+			fr.del_flag = 0 AND  p.del_flag = 0
+			AND fp.del_flag = 0
+			AND fl.del_flag = 0
+			AND arbi.appoint_post_name = #{postName}
+			AND fl.create_id = #{createId}
+			<if test="idList != null and idList.size() > 0">
+				OR fl.id in
+				<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+			<if test="offset != null and limit != null">
+				limit #{offset} ,#{limit}
+			</if>
+	</select>
+
+	<select id="getFileGroupListByNodeType" resultType="com.crud.cloud.evanliu2968.dto.response.FileGroupRes">
+
+		SELECT
+			tk.task_name AS groupCode,
+			IFNULL(COUNT(*), 0) AS count
+		FROM
+			task tk
+		LEFT JOIN task_flow_path_ref tf ON tk.id = tf.task_id
+
+		<if test="taskType != null and taskType != ''">
+			<if test="taskType == 'RM'">
+				LEFT JOIN appoint_remove_base_info arbi ON tf.flow_path_id=arbi.flow_path_id AND arbi.del_flag = 0
+				LEFT JOIN appoint_remove_file_ref arfr ON arfr.flow_path_id = arbi.flow_path_id AND arfr.del_flag = 0
+				LEFT JOIN file fl ON fl.id = arfr.file_id
+			</if>
+			<if test="taskType == 'XR'">
+				LEFT JOIN incumbent_info ii ON tf.flow_path_id=ii.flow_path_id AND ii.del_flag = 0
+				LEFT JOIN appoint_remove_file_ref arfr ON ii.flow_path_id = arfr.flow_path_id AND arfr.del_flag = 0
+				LEFT JOIN file fl ON fl.id = arfr.file_id
+			</if>
+		</if>
+		WHERE
+			fl.create_id = #{createId}
+		AND fl.del_flag = 0
+		AND tk.del_flag = 0
+		AND tf.del_flag = 0
+		<if test="idList != null and idList.size() > 0">
+			OR fl.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		GROUP BY
+			task_name
+	</select>
+
+	<select id="getFileListByNodeTypeCount" resultType="java.lang.Integer">
+
+		SELECT
+			COUNT(*)
+		FROM
+			file fl
+		LEFT JOIN appoint_remove_file_ref arfr ON fl.id = arfr.file_id
+		<if test="taskType != null and taskType != ''">
+			<if test="taskType == 'RM'">
+				LEFT JOIN appoint_remove_base_info arbi ON arfr.flow_path_id=arbi.flow_path_id AND arbi.del_flag = 0
+				LEFT JOIN task_flow_path_ref tf ON arbi.flow_path_id = tf.flow_path_id
+				LEFT JOIN task tk ON tk.id = tf.task_id
+			</if>
+			<if test="taskType == 'XR'">
+				LEFT JOIN incumbent_info ii ON arfr.flow_path_id=ii.flow_path_id AND ii.del_flag = 0
+				LEFT JOIN task_flow_path_ref tf ON ii.flow_path_id = tf.flow_path_id
+				LEFT JOIN task tk ON tk.id = tf.task_id
+			</if>
+		</if>
+
+		WHERE
+			fl.create_id = #{createId}
+		AND arfr.del_flag = 0
+		AND fl.del_flag = 0
+		AND tk.del_flag = 0
+		AND tf.del_flag = 0
+		AND task_name = #{nodeType}
+		<if test="idList != null and idList.size() > 0">
+			OR fl.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+
+	<select id="getFileListByNodeType" resultType="com.crud.cloud.evanliu2968.dto.response.FileRes">
+		SELECT
+			fl.*, p.admin_name as createName
+		FROM
+			file fl
+		LEFT JOIN appoint_remove_file_ref fr ON fl.id = fr.file_id
+		<if test="taskType != null and taskType != ''">
+			<if test="taskType == 'RM'">
+				LEFT JOIN appoint_remove_base_info arbi ON fr.flow_path_id=arbi.flow_path_id AND arbi.del_flag = 0
+				LEFT JOIN task_flow_path_ref tf ON arbi.flow_path_id = tf.flow_path_id
+				LEFT JOIN task tk ON tk.id = tf.task_id
+			</if>
+			<if test="taskType == 'XR'">
+				LEFT JOIN incumbent_info ii ON fr.flow_path_id=ii.flow_path_id AND ii.del_flag = 0
+				LEFT JOIN task_flow_path_ref tf ON ii.flow_path_id = tf.flow_path_id
+				LEFT JOIN task tk ON tk.id = tf.task_id
+			</if>
+		</if>
+		LEFT JOIN admin_main p ON p.id = fl.create_id
+		WHERE
+			fr.del_flag = 0 AND p.del_flag = 0
+		AND fl.del_flag = 0
+		AND tk.del_flag = 0
+		AND tk.task_name = #{nodeType}
+		AND fl.create_id = #{createId}
+		<if test="idList != null and idList.size() > 0">
+			OR fl.id in
+			<foreach item="item" index="index" collection="idList" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		<if test="offset != null and limit != null">
+			limit #{offset} ,#{limit}
+		</if>
+	</select>
+
+</mapper>

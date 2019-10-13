@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crud.cloud.evanliu2968.dao.AdminGroupMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.crud.cloud.evanliu2968.po.admin.AdminGroupPO">
+        <id column="id" property="id" />
+        <result column="parent_id" property="parentId" />
+        <result column="group_code" property="groupCode" />
+        <result column="group_name" property="groupName" />
+        <result column="group_status" property="groupStatus" />
+        <result column="update_time" property="updateTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_id" property="updateId"/>
+        <result column="create_id" property="createId"/>
+        <result column="note" property="note"/>
+        <result column="version" property="version"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+
+    <select id="selectByfixedId" resultMap="BaseResultMap">
+        select id,group_name,group_status  from admin_group where id = #{id}
+     </select>
+   <select id="selectGroupList" resultType="com.crud.cloud.evanliu2968.dto.response.admin.AdminGroupRes"    >
+         SELECT
+             ar.id id,
+             ar.group_name groupName,
+            (
+            SELECT
+                count(0)
+            FROM
+                admin_main am
+            LEFT JOIN admin_group_ref arr ON am.id = arr.admin_id
+            WHERE
+                arr.group_id = ar.id
+                and arr.status=0
+                ) AS admin_count,
+              ar.group_code groupCode,
+              ar.parent_id
+            FROM
+                admin_group ar
+                WHERE
+            1=1
+            and ar.group_status=0
+            GROUP by id,groupName,groupCode
+            ORDER BY groupCode
+           <!--<if test="limit != null and offset != null">
+               limit #{limit} offset #{offset}
+           </if>-->
+    </select>
+    <select id="listGroupByAdminId" resultType="com.crud.cloud.evanliu2968.dto.response.admin.AdminGroupRes" parameterType="com.crud.cloud.evanliu2968.po.admin.AdminGroupRefPO"  >
+        SELECT
+        ar.id,
+        ar.group_name
+        FROM
+        admin_group ar  LEFT JOIN admin_group_ref arr ON ar.id = arr.group_id
+        WHERE
+        1=1
+        and ar.group_status=0
+        and arr.status=0
+        <if test="adminId != null ">
+            and  arr.admin_id= #{adminId}
+        </if>
+    </select>
+
+    <insert id="insertAdminGroup" keyProperty="id" useGeneratedKeys="true">
+        insert into admin_group (parent_id, group_code, group_name, group_status, create_id)
+        values (#{parentId}, #{groupCode}, #{groupName}, #{groupStatus}, #{createId});
+    </insert>
+
+    <select id="getAdminGroupByGroupCode" resultMap="BaseResultMap">
+        select id,group_code from admin_group
+        where group_code like concat(#{groupCode},'%')
+        and group_status = 0
+    </select>
+
+</mapper>

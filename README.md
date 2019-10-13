@@ -4,11 +4,11 @@ a spring-boot crud example.
 
  ## using
  - spring-boot
+ - maven
  - swagger2
  - mybatis
  - mysql
  - redis
- - maven
  - flyway
  - ...
 

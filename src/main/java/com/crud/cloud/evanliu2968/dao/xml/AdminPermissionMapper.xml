@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crud.cloud.evanliu2968.dao.AdminPermissionMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.crud.cloud.evanliu2968.po.admin.AdminPermissionPO">
+        <id column="id" property="id" />
+        <result column="permission_name" property="permissionName" />
+        <result column="rec_code" property="recCode" />
+        <result column="parent_id" property="parentId" />
+        <result column="url" property="url" />
+        <result column="white_list_status" property="whiteListStatus" />
+        <result column="update_time" property="updateTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_id" property="updateId"/>
+        <result column="create_id" property="createId"/>
+        <result column="note" property="note"/>
+        <result column="version" property="version"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+    <select id="selectPermissionsByAdminId" resultType="com.crud.cloud.evanliu2968.dto.response.admin.AdminPermissionsRes"   >
+        select
+        distinct
+        ap.id as id,
+        ap.permission_name as permission_name,
+        ap.rec_code as rec_code
+        from
+            admin_permission ap
+        left join admin_permission_ref apr on apr.permission_id = ap.parent_id
+        left join admin_role ar on ar.id = apr.role_id
+              and  ar.del_flag= apr.del_flag
+        left join admin_role_ref arr on ar.id = arr.role_id
+              and  ar.del_flag= arr.del_flag
+        left join admin_main am on am.id = arr.admin_id
+              and  am.del_flag= arr.del_flag
+        where
+            1 = 1
+            and apr.status=0
+            <if test="adminId!=null">
+                AND am.id = #{adminId}
+            </if>
+            <if test="url!=null">
+                AND ap.url = #{url}
+            </if>
+    </select>
+    <select id="selectPermissionsByAdminIdWhileLogin" resultType="com.crud.cloud.evanliu2968.dto.response.admin.AdminPermissionsRes"   >
+        select
+        distinct
+        ap.id as id,
+        ap.permission_name as permission_name,
+        ap.rec_code as rec_code,
+        ap.parent_id as parent_id
+        from
+        admin_permission ap
+        left join admin_permission_ref apr on apr.permission_id = ap.id
+        left join admin_role ar on ar.id = apr.role_id
+        and  ar.role_status= apr.status
+        left join admin_role_ref arr on ar.id = arr.role_id
+        and  ar.role_status= arr.status
+        left join admin_main am on am.id = arr.admin_id
+        and  am.admin_status= arr.status
+        where
+        1 = 1
+        and apr.status=0
+        <if test="adminId!=null">
+            AND am.id = #{adminId}
+        </if>
+    </select>
+    <select id="listPermissionByRoleId" resultType="com.crud.cloud.evanliu2968.dto.response.admin.AdminPermissionsRes"  parameterType="com.crud.cloud.evanliu2968.po.admin.AdminPermissionRefPO"  >
+        select
+        distinct
+        ap.id as id,
+        ap.permission_name as permission_name,
+        ap.rec_code as rec_code
+        from
+            admin_permission ap
+        left join admin_permission_ref apr on apr.permission_id = ap.id
+        left join admin_role ar on ar.id = apr.role_id
+           where  1 = 1
+           and apr.status=0
+            and ar.id = #{roleId}
+    </select>
+    <select id="getAdminPermissionList" resultType="com.crud.cloud.evanliu2968.dto.response.admin.AdminPermissionsRes"    >
+        select
+        ap.id as id,
+        ap.permission_name as permission_name,
+        ap.rec_code as rec_code,
+        ap.parent_id as parent_id
+        from
+            admin_permission ap
+           where  1 = 1
+           and ap.url is null
+          and ap.white_list_status='N'
+    </select>
+</mapper>

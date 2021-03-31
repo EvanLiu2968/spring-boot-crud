@@ -122,7 +122,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>24.1-jre</version>
+            <version>29.0-jre</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/dom4j/dom4j xml生成工具 -->
